@@ -5082,6 +5082,139 @@ class CrowdstrikeConnector(BaseConnector):
             self.debug_print("FIPS is not enabled")
         return fips_enabled
 
+    def _handle_qsp_upload_file(self, param):
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        try:
+            vault_id = param["vault_id"]
+            _, _, file_info = phantom_rules.vault_info(vault_id=vault_id)
+            file_info = next(iter(file_info))
+        except IndexError:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                "Vault file could not be found with supplied Vault ID",
+            )
+        except Exception as e:
+            return action_result.set_status(
+                phantom.APP_ERROR,
+                f"Vault ID not valid: {self._get_error_message_from_exception(e)}",
+            )
+
+        multipart_data = MultipartEncoder(
+            fields={
+                "file": (file_info["name"], open(file_info["path"], "rb")),
+                "scan": str(param.get("scan", False)).lower(),
+            }
+        )
+        headers = {"Content-Type": multipart_data.content_type}
+
+        ret_val, resp_json = self._make_rest_call_helper_oauth2(
+            action_result,
+            CROWDSTRIKE_QSP_UPLOAD_FILE_ENDPOINT,
+            headers=headers,
+            data=multipart_data,
+            method="post",
+            upload_file=True,
+        )
+
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        action_result.add_data(resp_json)
+        try:
+            sha256 = resp_json["resources"][0]["sha256"]
+            action_result.update_summary({"sha256": sha256})
+        except (KeyError, IndexError):
+            pass
+
+        return action_result.set_status(phantom.APP_SUCCESS, CROWDSTRIKE_QSP_FILE_UPLOADED)
+
+    def _handle_qsp_launch_scan(self, param):
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        json_payload = {"resources": [{"sha256": param["sha256"]}]}
+
+        ret_val, resp_json = self._make_rest_call_helper_oauth2(
+            action_result,
+            CROWDSTRIKE_QSP_LAUNCH_SCAN_ENDPOINT,
+            json_data=json_payload,
+            method="post",
+        )
+
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        action_result.add_data(resp_json)
+        try:
+            scan_id = resp_json["resources"][0]["id"]
+            action_result.update_summary({"scan_id": scan_id})
+        except (KeyError, IndexError):
+            pass
+
+        return action_result.set_status(phantom.APP_SUCCESS, CROWDSTRIKE_QSP_SCAN_LAUNCHED)
+
+    def _handle_qsp_get_scan_result(self, param):
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        scan_ids = [s.strip() for s in param["scan_id"].split(",") if s.strip()]
+
+        ret_val, resp_json = self._make_rest_call_helper_oauth2(
+            action_result,
+            CROWDSTRIKE_QSP_GET_SCAN_ENDPOINT,
+            params={"ids": scan_ids},
+            method="get",
+        )
+
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        resources = resp_json.get("resources", [])
+        if not resources:
+            return action_result.set_status(phantom.APP_SUCCESS, CROWDSTRIKE_QSP_SCAN_NOT_FOUND)
+
+        for resource in resources:
+            action_result.add_data(resource)
+
+        action_result.update_summary({"scan_results_returned": len(resources)})
+        return action_result.set_status(phantom.APP_SUCCESS)
+
+    def _handle_qsp_query_scans(self, param):
+        self.save_progress(f"In action handler for: {self.get_action_identifier()}")
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        params = {}
+        if param.get("filter"):
+            params["filter"] = param["filter"]
+        if param.get("offset"):
+            params["offset"] = param["offset"]
+        if param.get("limit"):
+            limit = self._validate_integers(action_result, param["limit"], "limit")
+            if limit is None:
+                return action_result.get_status()
+            params["limit"] = min(limit, 5000)
+        if param.get("sort"):
+            params["sort"] = param["sort"]
+
+        ret_val, resp_json = self._make_rest_call_helper_oauth2(
+            action_result,
+            CROWDSTRIKE_QSP_QUERY_SCANS_ENDPOINT,
+            params=params,
+            method="get",
+        )
+
+        if phantom.is_fail(ret_val):
+            return action_result.get_status()
+
+        scan_ids = resp_json.get("resources", [])
+        for scan_id in scan_ids:
+            action_result.add_data({"scan_id": scan_id})
+
+        action_result.update_summary({"total_scans": len(scan_ids)})
+        return action_result.set_status(phantom.APP_SUCCESS)
+
     def handle_action(self, param):
         # Get the action that we are supposed to execute for this App Run
         self.debug_print("action_id ", self.get_action_identifier())
@@ -5164,6 +5297,10 @@ class CrowdstrikeConnector(BaseConnector):
             "create_ioa_rule": self._handle_create_ioa_rule,
             "update_ioa_rule": self._handle_update_ioa_rule,
             "delete_ioa_rule": self._handle_delete_ioa_rule,
+            "qsp_upload_file": self._handle_qsp_upload_file,
+            "qsp_launch_scan": self._handle_qsp_launch_scan,
+            "qsp_get_scan_result": self._handle_qsp_get_scan_result,
+            "qsp_query_scans": self._handle_qsp_query_scans,
         }
 
         action = self.get_action_identifier()

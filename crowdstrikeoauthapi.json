@@ -22961,6 +22961,255 @@
                 "type": "custom",
                 "view": "crowdstrike_view.display_view"
             }
+        },
+        {
+            "action": "quick scan pro upload file",
+            "identifier": "qsp_upload_file",
+            "description": "Uploads a file to Quick Scan Pro for ML-based scanning. Samples expire after 90 days.",
+            "type": "generic",
+            "read_only": false,
+            "versions": "EQ(*)",
+            "parameters": {
+                "vault_id": {
+                    "description": "Vault ID of the file to upload",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "vault id"
+                    ],
+                    "order": 0
+                },
+                "scan": {
+                    "description": "Start scanning immediately after upload",
+                    "data_type": "boolean",
+                    "default": false,
+                    "order": 1
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.summary.sha256",
+                    "data_type": "string",
+                    "contains": [
+                        "sha256"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.sha256",
+                    "data_type": "string",
+                    "contains": [
+                        "sha256"
+                    ],
+                    "column_name": "SHA256",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.name",
+                    "data_type": "string",
+                    "column_name": "File Name",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "title": "Quick Scan Pro Upload File",
+                "type": "table",
+                "width": 12,
+                "height": 4
+            }
+        },
+        {
+            "action": "quick scan pro launch scan",
+            "identifier": "qsp_launch_scan",
+            "description": "Launches a Quick Scan Pro scan for a previously uploaded file identified by SHA256.",
+            "type": "investigate",
+            "read_only": false,
+            "versions": "EQ(*)",
+            "parameters": {
+                "sha256": {
+                    "description": "SHA256 of the file to scan (returned by the upload action)",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "hash",
+                        "sha256"
+                    ],
+                    "order": 0
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.summary.scan_id",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "string",
+                    "column_name": "Scan ID",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "title": "Quick Scan Pro Launch Scan",
+                "type": "table",
+                "width": 12,
+                "height": 4
+            }
+        },
+        {
+            "action": "quick scan pro get scan result",
+            "identifier": "qsp_get_scan_result",
+            "description": "Retrieves the result of one or more Quick Scan Pro scans by scan job ID.",
+            "type": "investigate",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "parameters": {
+                "scan_id": {
+                    "description": "Scan job ID(s) to retrieve results for (comma-separated)",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": true,
+                    "order": 0
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.summary.scan_results_returned",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.id",
+                    "data_type": "string",
+                    "column_name": "Scan ID",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.data.*.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 1
+                },
+                {
+                    "data_path": "action_result.data.*.result.verdict",
+                    "data_type": "string",
+                    "column_name": "Verdict",
+                    "column_order": 2
+                },
+                {
+                    "data_path": "action_result.data.*.result.threat_score",
+                    "data_type": "numeric",
+                    "column_name": "Threat Score",
+                    "column_order": 3
+                },
+                {
+                    "data_path": "action_result.data.*.sha256",
+                    "data_type": "string",
+                    "contains": [
+                        "sha256"
+                    ],
+                    "column_name": "SHA256",
+                    "column_order": 4
+                },
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "title": "Quick Scan Pro Scan Result",
+                "type": "table",
+                "width": 12,
+                "height": 5
+            }
+        },
+        {
+            "action": "quick scan pro query scans",
+            "identifier": "qsp_query_scans",
+            "description": "Queries Quick Scan Pro scan job IDs using an optional FQL filter.",
+            "type": "investigate",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "parameters": {
+                "filter": {
+                    "description": "FQL filter (e.g. sha256:'<hash>'). Leave blank to return all recent scans.",
+                    "data_type": "string",
+                    "order": 0
+                },
+                "limit": {
+                    "description": "Maximum number of scan IDs to return (max 5000)",
+                    "data_type": "numeric",
+                    "default": 100,
+                    "order": 1
+                },
+                "offset": {
+                    "description": "Starting offset for pagination",
+                    "data_type": "numeric",
+                    "order": 2
+                },
+                "sort": {
+                    "description": "Sort order for results",
+                    "data_type": "string",
+                    "value_list": [
+                        "created_timestamp.asc",
+                        "created_timestamp.desc"
+                    ],
+                    "default": "created_timestamp.desc",
+                    "order": 3
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.summary.total_scans",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.scan_id",
+                    "data_type": "string",
+                    "column_name": "Scan ID",
+                    "column_order": 0
+                },
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "title": "Quick Scan Pro Query Scans",
+                "type": "table",
+                "width": 12,
+                "height": 5
+            }
         }
     ],
     "pip39_dependencies": {

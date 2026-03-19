@@ -263,3 +263,14 @@ CROWDSTRIKE_UPDATE_PREVENTION_ACTIONS_ENDPOINT = "/policy/entities/prevention-ac
 
 CROWDSTRIKE_UPDATE_ALERT_ENDPOINT = "/alerts/entities/alerts/v3"
 CROWDSTRIKE_GET_ALERT_DETAILS_ENDPOINT = "/alerts/entities/alerts/v2"
+
+# Quick Scan Pro endpoints
+CROWDSTRIKE_QSP_UPLOAD_FILE_ENDPOINT = "/quickscanpro/entities/files/v1"
+CROWDSTRIKE_QSP_LAUNCH_SCAN_ENDPOINT = "/quickscanpro/entities/scans/v1"
+CROWDSTRIKE_QSP_GET_SCAN_ENDPOINT = "/quickscanpro/entities/scans/v1"
+CROWDSTRIKE_QSP_QUERY_SCANS_ENDPOINT = "/quickscanpro/queries/scans/v1"
+
+# Quick Scan Pro status messages
+CROWDSTRIKE_QSP_FILE_UPLOADED = "File uploaded successfully to Quick Scan Pro"
+CROWDSTRIKE_QSP_SCAN_LAUNCHED = "Quick Scan Pro scan launched successfully"
+CROWDSTRIKE_QSP_SCAN_NOT_FOUND = "No Quick Scan Pro scan results found for the given IDs"
